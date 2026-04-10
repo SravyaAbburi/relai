@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db, assetValidationsTable, projectsTable, projectConfigsTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
-import { ValidateAssetBody, ListValidationsQueryParams } from "@workspace/api-zod";
+import { ValidateAssetBody, ListValidationsQueryParams, GetValidationParams } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
 import {
   detectPII,
@@ -78,6 +78,8 @@ router.post("/validate", requireAuth, async (req, res): Promise<void> => {
     .values({
       projectId,
       assetName,
+      assetContent,
+      assetType,
       assetHash: contentHash,
       validationResult: finalStatus,
       reasons: finalReasons,
@@ -100,6 +102,50 @@ router.post("/validate", requireAuth, async (req, res): Promise<void> => {
     latency: aiResult.latency,
     rawResponse: aiResult.rawResponse,
     preCheckResults,
+  });
+});
+
+router.get("/validations/:id", requireAuth, async (req, res): Promise<void> => {
+  const params = GetValidationParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [row] = await db
+    .select({
+      id: assetValidationsTable.id,
+      projectId: assetValidationsTable.projectId,
+      projectName: projectsTable.name,
+      assetName: assetValidationsTable.assetName,
+      assetContent: assetValidationsTable.assetContent,
+      assetType: assetValidationsTable.assetType,
+      validationResult: assetValidationsTable.validationResult,
+      reasons: assetValidationsTable.reasons,
+      tokensUsed: assetValidationsTable.tokensUsed,
+      cost: assetValidationsTable.cost,
+      latency: assetValidationsTable.latency,
+      confidence: assetValidationsTable.confidence,
+      rawResponse: assetValidationsTable.rawResponse,
+      preCheckResults: assetValidationsTable.preCheckResults,
+      createdAt: assetValidationsTable.createdAt,
+    })
+    .from(assetValidationsTable)
+    .leftJoin(projectsTable, eq(assetValidationsTable.projectId, projectsTable.id))
+    .where(eq(assetValidationsTable.id, params.data.id))
+    .limit(1);
+
+  if (!row) {
+    res.status(404).json({ error: "Validation not found" });
+    return;
+  }
+
+  res.json({
+    ...row,
+    projectName: row.projectName ?? "Unknown",
+    tokensUsed: Number(row.tokensUsed),
+    cost: Number(row.cost),
+    confidence: Number(row.confidence),
   });
 });
 

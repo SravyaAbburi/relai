@@ -221,8 +221,42 @@ export interface AssetValidation {
   cost: number;
   latency: number;
   confidence: number;
+  rawResponse?: string;
+  preCheckResults?: Record<string, unknown>;
   createdAt: string;
 }
+
+export type AssetValidationDetailAssetType =
+  (typeof AssetValidationDetailAssetType)[keyof typeof AssetValidationDetailAssetType];
+
+export const AssetValidationDetailAssetType = {
+  image: "image",
+  text: "text",
+  audio: "audio",
+  video: "video",
+} as const;
+
+export interface AssetValidationDetail {
+  id: number;
+  projectId: number;
+  projectName: string;
+  assetName: string;
+  assetContent: string;
+  assetType: AssetValidationDetailAssetType;
+  validationResult: AssetValidationValidationResult;
+  reasons: string[];
+  tokensUsed: number;
+  cost: number;
+  latency: number;
+  confidence: number;
+  rawResponse?: string;
+  preCheckResults?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export type GetValidationParams = {
+  id: number;
+};
 
 export type ObservabilityResponseMetrics = {
   totalCost: number;

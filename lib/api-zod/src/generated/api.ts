@@ -227,6 +227,31 @@ export const ValidateAssetResponse = zod.object({
 });
 
 /**
+ * @summary Get a single validation by ID
+ */
+export const GetValidationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetValidationResponse = zod.object({
+  id: zod.number(),
+  projectId: zod.number(),
+  projectName: zod.string(),
+  assetName: zod.string(),
+  assetContent: zod.string(),
+  assetType: zod.enum(["image", "text", "audio", "video"]),
+  validationResult: zod.enum(["PASS", "FAIL"]),
+  reasons: zod.array(zod.string()),
+  tokensUsed: zod.number(),
+  cost: zod.number(),
+  latency: zod.number(),
+  confidence: zod.number(),
+  rawResponse: zod.string().optional(),
+  preCheckResults: zod.record(zod.unknown()).optional(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
  * @summary List asset validations
  */
 export const ListValidationsQueryParams = zod.object({

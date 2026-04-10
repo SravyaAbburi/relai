@@ -7,6 +7,8 @@ export const assetValidationsTable = pgTable("asset_validations", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").notNull().references(() => projectsTable.id, { onDelete: "cascade" }),
   assetName: text("asset_name").notNull(),
+  assetContent: text("asset_content").notNull().default(""),
+  assetType: text("asset_type", { enum: ["image", "text", "audio", "video"] }).notNull().default("text"),
   assetHash: text("asset_hash"),
   validationResult: text("validation_result", { enum: ["PASS", "FAIL"] }).notNull(),
   reasons: jsonb("reasons").notNull().default([]),

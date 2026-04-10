@@ -4,6 +4,8 @@ import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import Projects from "@/pages/projects";
 import ProjectDetail from "@/pages/projects/[id]";
+import ValidationDetail from "@/pages/validation-detail";
+import RunPage from "@/pages/run";
 import Observability from "@/pages/observability";
 import Prompts from "@/pages/prompts";
 import Users from "@/pages/users";
@@ -23,9 +25,17 @@ export default function AppRoutes() {
       <Route path="/projects">
         <AppLayout><ProtectedRoute component={Projects} /></AppLayout>
       </Route>
+
+      <Route path="/projects/:projectId/validations/:validationId">
+        <AppLayout><ProtectedRoute component={ValidationDetail} /></AppLayout>
+      </Route>
       
       <Route path="/projects/:id">
         <AppLayout><ProtectedRoute component={ProjectDetail} /></AppLayout>
+      </Route>
+
+      <Route path="/run">
+        <AppLayout><ProtectedRoute component={RunPage} /></AppLayout>
       </Route>
       
       <Route path="/observability">

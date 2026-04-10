@@ -18,12 +18,14 @@ import type {
 
 import type {
   AssetValidation,
+  AssetValidationDetail,
   AuthResponse,
   CreateProjectBody,
   CreatePromptBody,
   CreateUserBody,
   ErrorResponse,
   GetObservabilityParams,
+  GetValidationParams,
   HealthStatus,
   ListValidationsParams,
   LoginBody,
@@ -1190,6 +1192,80 @@ export const useValidateAsset = <
 > => {
   return useMutation(getValidateAssetMutationOptions(options));
 };
+
+/**
+ * @summary Get a single validation by ID
+ */
+export const getGetValidationUrl = (id: number) => {
+  return `/api/validations/${id}`;
+};
+
+export const getValidation = async (
+  id: number,
+  options?: RequestInit,
+): Promise<AssetValidationDetail> => {
+  return customFetch<AssetValidationDetail>(getGetValidationUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetValidationQueryKey = (id: number) => {
+  return [`/api/validations/${id}`] as const;
+};
+
+export const getGetValidationQueryOptions = <
+  TData = Awaited<ReturnType<typeof getValidation>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getValidation>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetValidationQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getValidation>>> = ({
+    signal,
+  }) => getValidation(id, { signal, ...requestOptions });
+  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getValidation>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetValidationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getValidation>>
+>;
+export type GetValidationQueryError = ErrorType<unknown>;
+
+export function useGetValidation<
+  TData = Awaited<ReturnType<typeof getValidation>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getValidation>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetValidationQueryOptions(id, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+  query.queryKey = queryOptions.queryKey;
+  return query;
+}
 
 /**
  * @summary List asset validations

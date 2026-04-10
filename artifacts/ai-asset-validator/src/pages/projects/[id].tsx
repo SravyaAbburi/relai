@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRoute, useLocation } from "wouter";
 import {
   useGetProject, useGetProjectConfig, useUpsertProjectConfig,
-  useValidateAsset, useListValidations,
+  useValidateAsset, useListValidations, getValidation,
   getGetProjectConfigQueryKey, getListValidationsQueryKey, getGetProjectQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import {
   CheckCircle2, XCircle, Clock, Zap, DollarSign, ListChecks, FileText,
-  Upload, Check, AlertTriangle, Fingerprint, Image as ImageIcon, Eye, Play
+  Upload, Check, AlertTriangle, Fingerprint, Image as ImageIcon, Eye, Play, RefreshCw
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -574,80 +574,126 @@ function ValidationsTab({ projectId, onRunNew }: { projectId: number; onRunNew: 
   const { data: validations, isLoading } = useListValidations({
     query: { enabled: !!projectId, queryKey: getListValidationsQueryKey({ projectId }) }
   });
-  const [viewRecord, setViewRecord] = useState<any>(null);
+  const [, navigate] = useLocation();
+  const validateAsset = useValidateAsset();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [rerunningId, setRerunningId] = useState<number | null>(null);
+
+  const handleRunAgain = async (validationId: number) => {
+    setRerunningId(validationId);
+    try {
+      const full = await getValidation(validationId);
+      validateAsset.mutate(
+        {
+          data: {
+            projectId: full.projectId,
+            assetName: full.assetName,
+            assetContent: full.assetContent,
+            assetType: full.assetType as any,
+          },
+        },
+        {
+          onSuccess: (result: any) => {
+            toast({ title: "Re-validation complete", description: `Result: ${result.status}` });
+            queryClient.invalidateQueries({ queryKey: getListValidationsQueryKey({ projectId }) });
+            queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
+            if (result.id) navigate(`/projects/${projectId}/validations/${result.id}`);
+          },
+          onError: (err: any) => {
+            toast({ title: "Re-validation failed", description: err?.error || "Error", variant: "destructive" });
+          },
+          onSettled: () => setRerunningId(null),
+        }
+      );
+    } catch {
+      toast({ title: "Failed to load asset", variant: "destructive" });
+      setRerunningId(null);
+    }
+  };
 
   if (isLoading) return <div className="p-4">Loading...</div>;
 
   return (
-    <>
-      <ValidationDetailDialog
-        record={viewRecord}
-        open={!!viewRecord}
-        onOpenChange={(v) => { if (!v) setViewRecord(null); }}
-      />
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Validation History</CardTitle>
-              <CardDescription>Recent validation runs for this project.</CardDescription>
-            </div>
-            <Button onClick={onRunNew} size="sm">
-              <Play className="h-4 w-4 mr-2" /> Run Validation
-            </Button>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Validation History</CardTitle>
+            <CardDescription>Recent validation runs for this project.</CardDescription>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
+          <Button onClick={onRunNew} size="sm">
+            <Play className="h-4 w-4 mr-2" /> Run Validation
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Asset</TableHead>
+              <TableHead>Result</TableHead>
+              <TableHead>Confidence</TableHead>
+              <TableHead>Latency</TableHead>
+              <TableHead>Cost</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead className="w-[100px] text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {validations?.length === 0 ? (
               <TableRow>
-                <TableHead>Asset</TableHead>
-                <TableHead>Result</TableHead>
-                <TableHead>Confidence</TableHead>
-                <TableHead>Latency</TableHead>
-                <TableHead>Cost</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="w-[60px] text-right">View</TableHead>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  No validations yet.{" "}
+                  <button className="text-primary underline" onClick={onRunNew}>Run your first validation</button>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {validations?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                    No validations yet.{" "}
-                    <button className="text-primary underline" onClick={onRunNew}>Run your first validation</button>
+            ) : (
+              validations?.map((v) => (
+                <TableRow key={v.id}>
+                  <TableCell className="font-medium truncate max-w-[200px]">{v.assetName}</TableCell>
+                  <TableCell>
+                    <Badge variant={v.validationResult === "PASS" ? "default" : "destructive"}
+                      className={v.validationResult === "PASS" ? "bg-emerald-500 hover:bg-emerald-600" : ""}>
+                      {v.validationResult}
+                    </Badge>
                   </TableCell>
-                </TableRow>
-              ) : (
-                validations?.map((v) => (
-                  <TableRow key={v.id}>
-                    <TableCell className="font-medium truncate max-w-[200px]">{v.assetName}</TableCell>
-                    <TableCell>
-                      <Badge variant={v.validationResult === "PASS" ? "default" : "destructive"}
-                        className={v.validationResult === "PASS" ? "bg-emerald-500 hover:bg-emerald-600" : ""}>
-                        {v.validationResult}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{(v.confidence * 100).toFixed(1)}%</TableCell>
-                    <TableCell className="font-mono text-xs">{v.latency}ms</TableCell>
-                    <TableCell className="font-mono text-xs">${v.cost.toFixed(4)}</TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {format(new Date(v.createdAt), 'MMM d HH:mm')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewRecord(v)}>
+                  <TableCell>{(v.confidence * 100).toFixed(1)}%</TableCell>
+                  <TableCell className="font-mono text-xs">{v.latency}ms</TableCell>
+                  <TableCell className="font-mono text-xs">${v.cost.toFixed(4)}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {format(new Date(v.createdAt), 'MMM d HH:mm')}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        title="View details"
+                        onClick={() => navigate(`/projects/${projectId}/validations/${v.id}`)}
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        title="Run again"
+                        disabled={rerunningId === v.id}
+                        onClick={() => handleRunAgain(v.id)}
+                      >
+                        <RefreshCw className={`h-4 w-4 ${rerunningId === v.id ? "animate-spin" : ""}`} />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
 

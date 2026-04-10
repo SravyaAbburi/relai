@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Target, MessageSquare, Users, LogOut } from "lucide-react";
+import { LayoutDashboard, Target, MessageSquare, Users, LogOut, Play } from "lucide-react";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout, isAdmin } = useAuth();
@@ -9,6 +9,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const navigation = [
     { name: "Projects", href: "/projects", icon: LayoutDashboard },
+    { name: "Run", href: "/run", icon: Play },
     { name: "Observability", href: "/observability", icon: Target },
     ...(isAdmin ? [
       { name: "System Prompts", href: "/prompts", icon: MessageSquare },
