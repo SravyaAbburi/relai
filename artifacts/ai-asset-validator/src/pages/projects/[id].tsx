@@ -196,7 +196,6 @@ function PlaygroundTab({ projectId, projectType }: { projectId: number, projectT
   const [assetName, setAssetName] = useState("");
   const [validationRules, setValidationRules] = useState("");
   const [promptOverride, setPromptOverride] = useState("");
-  const [model, setModel] = useState("gpt-5-mini");
   const [enablePII, setEnablePII] = useState(true);
   const [enableBlur, setEnableBlur] = useState(true);
   const [enableDuplication, setEnableDuplication] = useState(true);
@@ -244,7 +243,6 @@ function PlaygroundTab({ projectId, projectType }: { projectId: number, projectT
         assetType,
         validationRules: validationRules || undefined,
         promptOverride: promptOverride || undefined,
-        model: model || undefined,
         enablePIICheck: enablePII,
         enableBlurCheck: enableBlur,
         enableDuplicationCheck: enableDuplication,
@@ -310,19 +308,6 @@ function PlaygroundTab({ projectId, projectType }: { projectId: number, projectT
                   </Label>
                 </div>
               )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Model</Label>
-              <Select value={model} onValueChange={setModel}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gpt-5.2">GPT-5.2</SelectItem>
-                  <SelectItem value="gpt-5">GPT-5</SelectItem>
-                  <SelectItem value="gpt-5-mini">GPT-5 Mini</SelectItem>
-                  <SelectItem value="gpt-5-nano">GPT-5 Nano</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="border rounded-lg p-4 space-y-3">
