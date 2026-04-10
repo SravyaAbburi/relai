@@ -62,22 +62,22 @@ export default function ProjectDetail() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-6 h-11">
             <TabsTrigger value="dashboard" className="px-6">Dashboard</TabsTrigger>
+            <TabsTrigger value="config" className="px-6">Configuration</TabsTrigger>
             <TabsTrigger value="playground" className="px-6">Playground</TabsTrigger>
             <TabsTrigger value="validations" className="px-6">Validations</TabsTrigger>
-            <TabsTrigger value="config" className="px-6">Configuration</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="m-0">
             <DashboardTab projectId={projectId} />
+          </TabsContent>
+          <TabsContent value="config" className="m-0">
+            <ConfigTab projectId={projectId} />
           </TabsContent>
           <TabsContent value="playground" className="m-0">
             <PlaygroundTab projectId={projectId} projectType={project.type as any} />
           </TabsContent>
           <TabsContent value="validations" className="m-0">
             <ValidationsTab projectId={projectId} onRunNew={() => setActiveTab("playground")} />
-          </TabsContent>
-          <TabsContent value="config" className="m-0">
-            <ConfigTab projectId={projectId} />
           </TabsContent>
         </Tabs>
       </div>
@@ -197,9 +197,24 @@ function PlaygroundTab({ projectId, projectType }: { projectId: number, projectT
   const [validationRules, setValidationRules] = useState("");
   const [promptOverride, setPromptOverride] = useState("");
   const [model, setModel] = useState("gpt-5-mini");
-  const [enablePII, setEnablePII] = useState<boolean | null>(null);
-  const [enableBlur, setEnableBlur] = useState<boolean | null>(null);
-  const [enableDuplication, setEnableDuplication] = useState<boolean | null>(null);
+  const [enablePII, setEnablePII] = useState(true);
+  const [enableBlur, setEnableBlur] = useState(true);
+  const [enableDuplication, setEnableDuplication] = useState(true);
+  const [configLoaded, setConfigLoaded] = useState(false);
+
+  const { data: config } = useGetProjectConfig(projectId, {
+    query: { enabled: !!projectId, queryKey: getGetProjectConfigQueryKey(projectId) }
+  });
+
+  useEffect(() => {
+    if (config && !configLoaded) {
+      setEnablePII(config.enablePIIValidation);
+      setEnableBlur(config.enableBlurCheck);
+      setEnableDuplication(config.enableDuplicationCheck);
+      if (config.validationRules) setValidationRules(config.validationRules);
+      setConfigLoaded(true);
+    }
+  }, [config, configLoaded]);
 
   const { toast } = useToast();
   const validateAsset = useValidateAsset();
@@ -311,19 +326,35 @@ function PlaygroundTab({ projectId, projectType }: { projectId: number, projectT
             </div>
 
             <div className="border rounded-lg p-4 space-y-3">
-              <p className="text-sm font-medium">Pre-check Overrides</p>
-              <p className="text-xs text-muted-foreground">Leave unset to use project configuration defaults.</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">Pre-checks</p>
+                <span className="text-xs text-muted-foreground">Loaded from config · toggle to override</span>
+              </div>
               <div className="space-y-3">
-                <PreCheckToggle label="PII Detection" value={enablePII} onChange={setEnablePII} />
-                <PreCheckToggle label="Blur Check" value={enableBlur} onChange={setEnableBlur} />
-                <PreCheckToggle label="Duplication Check" value={enableDuplication} onChange={setEnableDuplication} />
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-normal">PII Detection</Label>
+                  <Switch checked={enablePII} onCheckedChange={setEnablePII} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-normal">Blur Check</Label>
+                  <Switch checked={enableBlur} onCheckedChange={setEnableBlur} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-normal">Duplication Check</Label>
+                  <Switch checked={enableDuplication} onCheckedChange={setEnableDuplication} />
+                </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Rules Override <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Label>
+                Validation Rules{" "}
+                <span className="text-muted-foreground text-xs font-normal">
+                  {config?.validationRules ? "from config · editable" : "optional"}
+                </span>
+              </Label>
               <Textarea
-                placeholder="Override project validation rules..."
+                placeholder="Validation rules for this run..."
                 className="min-h-[80px] text-sm"
                 value={validationRules}
                 onChange={(e) => setValidationRules(e.target.value)}
@@ -364,39 +395,6 @@ function PlaygroundTab({ projectId, projectType }: { projectId: number, projectT
   );
 }
 
-function PreCheckToggle({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: boolean | null;
-  onChange: (v: boolean | null) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <Label className="text-sm">{label}</Label>
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">
-          {value === null ? "Default" : value ? "On" : "Off"}
-        </span>
-        <Select
-          value={value === null ? "default" : value ? "on" : "off"}
-          onValueChange={(v) => onChange(v === "default" ? null : v === "on")}
-        >
-          <SelectTrigger className="h-7 w-[90px] text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="default">Default</SelectItem>
-            <SelectItem value="on">Enable</SelectItem>
-            <SelectItem value="off">Disable</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  );
-}
 
 function ValidationResultCard({ result }: { result: any }) {
   return (

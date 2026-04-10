@@ -7,9 +7,9 @@ export const projectConfigsTable = pgTable("project_configs", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").notNull().references(() => projectsTable.id, { onDelete: "cascade" }),
   validationRules: text("validation_rules").notNull().default(""),
-  enableDuplicationCheck: boolean("enable_duplication_check").notNull().default(false),
-  enablePIIValidation: boolean("enable_pii_validation").notNull().default(false),
-  enableBlurCheck: boolean("enable_blur_check").notNull().default(false),
+  enableDuplicationCheck: boolean("enable_duplication_check").notNull().default(true),
+  enablePIIValidation: boolean("enable_pii_validation").notNull().default(true),
+  enableBlurCheck: boolean("enable_blur_check").notNull().default(true),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

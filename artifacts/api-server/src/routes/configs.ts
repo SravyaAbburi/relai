@@ -26,9 +26,9 @@ router.get("/projects/:id/config", requireAuth, async (req, res): Promise<void> 
       .values({
         projectId: params.data.id,
         validationRules: "",
-        enableDuplicationCheck: false,
-        enablePIIValidation: false,
-        enableBlurCheck: false,
+        enableDuplicationCheck: true,
+        enablePIIValidation: true,
+        enableBlurCheck: true,
       })
       .returning();
     config = created;
@@ -57,9 +57,9 @@ router.post("/projects/:id/config", requireAuth, async (req, res): Promise<void>
 
   const updates = {
     validationRules: parsed.data.validationRules ?? "",
-    enableDuplicationCheck: parsed.data.enableDuplicationCheck ?? false,
-    enablePIIValidation: parsed.data.enablePIIValidation ?? false,
-    enableBlurCheck: parsed.data.enableBlurCheck ?? false,
+    enableDuplicationCheck: parsed.data.enableDuplicationCheck ?? true,
+    enablePIIValidation: parsed.data.enablePIIValidation ?? true,
+    enableBlurCheck: parsed.data.enableBlurCheck ?? true,
     updatedAt: new Date(),
   };
 
