@@ -93,62 +93,99 @@ function DashboardTab({ projectId }: { projectId: number }) {
   const stats = project as any;
   if (!stats) return null;
 
-  const passRate = stats.totalAssets ? ((stats.passCount / stats.totalAssets) * 100).toFixed(1) : 0;
+  const total = stats.validatedAssets || 0;
+  const passed = stats.passCount || 0;
+  const failed = stats.failCount || 0;
+  const duplicates = stats.duplicateCount || 0;
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Assets Validated</CardTitle>
-          <ListChecks className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.validatedAssets || 0}</div>
-        </CardContent>
-      </Card>
+    <div className="space-y-4">
+      {/* Top row: primary counts */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Assets Validated</CardTitle>
+            <ListChecks className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{total.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">Total runs</p>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Pass Rate</CardTitle>
-          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{passRate}%</div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {stats.passCount || 0} passed out of {stats.validatedAssets || 0}
-          </p>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Passed</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-emerald-600">{passed.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {total > 0 ? ((passed / total) * 100).toFixed(1) : 0}% pass rate
+            </p>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Average Latency</CardTitle>
-          <Clock className="h-4 w-4 text-blue-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.avgLatency || 0}ms</div>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Failed</CardTitle>
+            <XCircle className="h-4 w-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">{failed.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {total > 0 ? ((failed / total) * 100).toFixed(1) : 0}% fail rate
+            </p>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Tokens</CardTitle>
-          <Zap className="h-4 w-4 text-amber-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{(stats.totalTokens || 0).toLocaleString()}</div>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Duplicates Caught</CardTitle>
+            <Fingerprint className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-amber-600">{duplicates.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">Pre-check blocks</p>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
-          <DollarSign className="h-4 w-4 text-emerald-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">${(stats.totalCost || 0).toFixed(4)}</div>
-        </CardContent>
-      </Card>
+      {/* Bottom row: performance & cost */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Tokens</CardTitle>
+            <Zap className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{(stats.totalTokens || 0).toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">Input + output</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg Latency</CardTitle>
+            <Clock className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{(stats.avgLatency || 0).toLocaleString()}ms</div>
+            <p className="text-xs text-muted-foreground mt-1">Per validation</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
+            <DollarSign className="h-4 w-4 text-emerald-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${(stats.totalCost || 0).toFixed(4)}</div>
+            <p className="text-xs text-muted-foreground mt-1">AI inference spend</p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

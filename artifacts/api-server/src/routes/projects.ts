@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, projectsTable, assetValidationsTable } from "@workspace/db";
-import { eq, and, count, sum, avg } from "drizzle-orm";
+import { eq, and, count, sum, avg, sql } from "drizzle-orm";
 import { CreateProjectBody, GetProjectParams } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
 
@@ -48,27 +48,24 @@ router.get("/projects/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  // Compute stats
+  // Compute stats in a single query
   const [stats] = await db
     .select({
       totalAssets: count(assetValidationsTable.id),
       totalTokens: sum(assetValidationsTable.tokensUsed),
       totalCost: sum(assetValidationsTable.cost),
       avgLatency: avg(assetValidationsTable.latency),
+      passCount: sql<number>`count(*) filter (where ${assetValidationsTable.validationResult} = 'PASS')`,
+      failCount: sql<number>`count(*) filter (where ${assetValidationsTable.validationResult} = 'FAIL')`,
+      duplicateCount: sql<number>`count(*) filter (where (${assetValidationsTable.preCheckResults}->>'isDuplicate')::boolean = true)`,
     })
     .from(assetValidationsTable)
     .where(eq(assetValidationsTable.projectId, params.data.id));
 
-  const [passStats] = await db
-    .select({ passCount: count(assetValidationsTable.id) })
-    .from(assetValidationsTable)
-    .where(and(
-      eq(assetValidationsTable.projectId, params.data.id),
-      eq(assetValidationsTable.validationResult, "PASS")
-    ));
-
   const totalAssets = Number(stats?.totalAssets ?? 0);
-  const passCount = Number(passStats?.passCount ?? 0);
+  const passCount = Number(stats?.passCount ?? 0);
+  const failCount = Number(stats?.failCount ?? 0);
+  const duplicateCount = Number(stats?.duplicateCount ?? 0);
   const passPercent = totalAssets > 0 ? Math.round((passCount / totalAssets) * 100 * 10) / 10 : 0;
 
   res.json({
@@ -76,6 +73,8 @@ router.get("/projects/:id", requireAuth, async (req, res): Promise<void> => {
     totalAssets,
     validatedAssets: totalAssets,
     passCount,
+    failCount,
+    duplicateCount,
     passPercent,
     totalTokens: Number(stats?.totalTokens ?? 0),
     totalCost: Math.round(Number(stats?.totalCost ?? 0) * 1_000_000) / 1_000_000,
