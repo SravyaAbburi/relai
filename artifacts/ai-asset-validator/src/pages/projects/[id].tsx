@@ -264,9 +264,10 @@ function PlaygroundTab({ projectId, projectType }: { projectId: number, projectT
   // };
    const onSubmit = async () => {
   //image
-  if (assetType === "image") {
+  // if (assetType === "image") {
+  if (assetType) {
     if (!assetContent) {
-      toast({ title: "Please upload image", variant: "destructive" });
+      toast({ title: "Please upload asset", variant: "destructive" });
       return;
     }
 
@@ -277,22 +278,54 @@ function PlaygroundTab({ projectId, projectType }: { projectId: number, projectT
 
       formData.append("file", blob, assetName || "image.jpg");
       formData.append("description", validationRules || "Validate this image");
+      formData.append("assetType", assetType);
+    // const endpoint = "/api/validate";
+    const endpointMap: Record<string, string> = {
+      image: "validate-image",
+      audio: "validate-audio",
+      text: "validate-text",
+      video: "validate-video",
+    };
 
-      const response = await fetch("/api/validate-image", {
+    const apiPath = endpointMap[assetType];
+
+    // const endpoint = `http://localhost:3001/api/${apiPath}`;
+    const endpoint = `/api/${apiPath}`;
+      // const response = await fetch("/api/validate-image", {
+      //   method: "POST",
+      //   body: formData,
+      // });
+      const response = await fetch(endpoint, {
         method: "POST",
         body: formData,
       });
 
-      const data = await response.json();
 
-      console.log("NEW API RESPONSE:", data);
+      const data = await response.json();
+      const validation = data.api2?.validation;
+
+      const reasonsArray = [];
+
+      if (validation?.reasoning) {
+        reasonsArray.push(validation.reasoning);
+      }
+
+      if (validation?.final_status === "FAIL" && validation?.failure_reason) {
+        reasonsArray.push(`Failure Reason: ${validation.failure_reason}`);
+      }
       const mappedResult = {
-        status: data.api2?.status || "PASS",
+        // status: data.api2?.status || "PASS",
+        status: data.api2?.validation?.final_status || "",
         confidence: 0.9,
-        tokensUsed: 0,
-        latency: 0,
-        cost: 0,
-        reasons: [JSON.stringify(data.api2)],
+        // tokensUsed: 0,
+        tokensUsed: data.api2?.metrics?.llm_usage?.total_tokens || 0,
+        // latency: 0,
+        latency: data.api2?.metrics?.latency_ms || 0,
+        // cost: 0,
+        cost: data.api2?.metrics?.llm_usage?.estimated_cost_usd || 0,
+        // reasons: [JSON.stringify(data.api2)],
+        // reasons: data.api2?.validation?.reasoning || [],
+        reasons: reasonsArray,
         preCheckResults: {},
         rawResponse: JSON.stringify(data, null, 2),
       };

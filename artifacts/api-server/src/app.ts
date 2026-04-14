@@ -29,6 +29,9 @@ app.use(
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use("/api/validate-image", validateImageRoute);
+app.use("/api/validate-audio", validateImageRoute);
+app.use("/api/validate-text", validateImageRoute);
+app.use("/api/validate-video", validateImageRoute);
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 app.use("/api", router);

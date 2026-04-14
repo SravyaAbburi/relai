@@ -12,6 +12,7 @@ router.post("/", upload.single("file"), async (req, res) => {
   try {
     const description = req.body.description;
     const file = req.file;
+    const assetType = req.body.assetType;
 
     if (!file || !description) {
       return res.status(400).json({ error: "Missing file or description" });
@@ -32,8 +33,27 @@ router.post("/", upload.single("file"), async (req, res) => {
     formData.append("file", fs.createReadStream(file.path));
     formData.append("project_description", JSON.stringify(api1Data));
 
+    const endpointMap: Record<string, string> = {
+      image: "image-check",
+      audio: "audio-check",
+      text: "text-check",
+      video: "video-check",
+    };
+
+    const apiPath = endpointMap[assetType];
+
+    if (!apiPath) {
+      return res.status(400).json({ error: "Invalid assetType" });
+    }
+    // const api2Res = await axios.post(
+    //   "https://asset-validation.onrender.com/image-check",
+    //   formData,
+    //   {
+    //     headers: formData.getHeaders(),
+    //   }
+    // );
     const api2Res = await axios.post(
-      "https://asset-validation.onrender.com/upload-check",
+      `https://asset-validation.onrender.com/${apiPath}`,
       formData,
       {
         headers: formData.getHeaders(),
