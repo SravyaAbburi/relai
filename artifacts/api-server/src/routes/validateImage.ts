@@ -60,6 +60,7 @@ router.post("/", upload.single("file"), async (req, res) => {
       audio: "audio-check",
       text: "text-check",
       video: "video-check",
+      document: "document-check",
     };
 
     const apiPath = endpointMap[assetType];
@@ -105,6 +106,7 @@ router.post("/", upload.single("file"), async (req, res) => {
       error: err.message || "Something went wrong",
     });
   }
+  return;
 });
 
 export default router;
