@@ -22,10 +22,10 @@ catalogs:
       specifier: ^5.90.21
       version: 5.99.0
     '@types/node':
-      specifier: ^25.3.3
+      specifier: ^25.6.0
       version: 25.6.0
     '@types/react':
-      specifier: ^19.2.0
+      specifier: ^19.2.14
       version: 19.2.14
     '@types/react-dom':
       specifier: ^19.2.0
@@ -156,6 +156,16 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.14
+      p-retry:
+        specifier: ^7.1.1
+        version: 7.1.1
+      react:
+        specifier: 'catalog:'
+        version: 19.1.0
     devDependencies:
       '@rollup/rollup-win32-x64-msvc':
         specifier: ^4.60.1
@@ -163,6 +173,12 @@ importers:
       '@tailwindcss/oxide-win32-x64-msvc':
         specifier: ^4.2.2
         version: 4.2.2
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.6.0
+      '@types/pg':
+        specifier: ^8.20.0
+        version: 8.20.0
       lightningcss-win32-x64-msvc:
         specifier: ^1.32.0
         version: 1.32.0
