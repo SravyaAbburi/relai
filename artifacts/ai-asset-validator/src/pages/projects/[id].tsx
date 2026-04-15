@@ -28,7 +28,7 @@ export default function ProjectDetail() {
   const [, params] = useRoute("/projects/:id");
   const projectId = parseInt(params?.id || "0", 10);
   const [activeTab, setActiveTab] = useState("dashboard");
-   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  //  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 const [description, setDescription] = useState("");
 const [result, setResult] = useState<any>(null);
 const [loading, setLoading] = useState(false);
@@ -194,6 +194,7 @@ function DashboardTab({ projectId }: { projectId: number }) {
 }
 
 function PlaygroundTab({ projectId, projectType }: { projectId: number, projectType: "image" | "text" | "audio" | "video" }) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [assetType, setAssetType] = useState<any>(projectType || "text");
   const [assetContent, setAssetContent] = useState("");
   const [assetName, setAssetName] = useState("");
@@ -226,6 +227,7 @@ function PlaygroundTab({ projectId, projectType }: { projectId: number, projectT
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setSelectedFile(file);
     setAssetName(file.name);
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -264,35 +266,72 @@ function PlaygroundTab({ projectId, projectType }: { projectId: number, projectT
   // };
    const onSubmit = async () => {
   //image
-  if (assetType === "image") {
-    if (!assetContent) {
-      toast({ title: "Please upload image", variant: "destructive" });
-      return;
-    }
+  // if (assetType === "image") {
+  if (assetType) {
+    // if (!selectedFile) {
+    //   toast({ title: "Please upload asset", variant: "destructive" });
+    //   return;
+    // }
 
     try {
       const formData = new FormData();
-      const res = await fetch(assetContent);
-      const blob = await res.blob();
+      // const res = await fetch(assetContent);
+      // const blob = await res.blob();
+      if (!selectedFile && assetType !== "text") {
+        toast({ title: "No file selected", variant: "destructive" });
+        return;
+      }
+      // formData.append("file", blob, assetName || "image.jpg");
+      formData.append("file", selectedFile);
+      formData.append("description", validationRules || "Validate this");
+      formData.append("assetType", assetType);
+    // const endpoint = "/api/validate";
+    const endpointMap: Record<string, string> = {
+      image: "validate-image",
+      audio: "validate-audio",
+      text: "validate-text",
+      video: "validate-video",
+    };
 
-      formData.append("file", blob, assetName || "image.jpg");
-      formData.append("description", validationRules || "Validate this image");
+    const apiPath = endpointMap[assetType];
 
-      const response = await fetch("/api/validate-image", {
+    // const endpoint = `http://localhost:3001/api/${apiPath}`;
+    const endpoint = `/api/${apiPath}`;
+      // const response = await fetch("/api/validate-image", {
+      //   method: "POST",
+      //   body: formData,
+      // });
+      const response = await fetch(endpoint, {
         method: "POST",
         body: formData,
       });
 
-      const data = await response.json();
 
-      console.log("NEW API RESPONSE:", data);
+      const data = await response.json();
+      const validation = data.api2?.validation;
+
+      const reasonsArray = [];
+
+      if (validation?.reasoning) {
+        reasonsArray.push(validation.reasoning);
+      }
+
+      if (validation?.final_status === "FAIL" && validation?.failure_reason) {
+        reasonsArray.push(`Failure Reason: ${validation.failure_reason}`);
+      }
       const mappedResult = {
-        status: data.api2?.status || "PASS",
+        // status: data.api2?.status || "PASS",
+        status: data.api2?.validation?.final_status || "",
         confidence: 0.9,
-        tokensUsed: 0,
-        latency: 0,
-        cost: 0,
-        reasons: [JSON.stringify(data.api2)],
+        // tokensUsed: 0,
+        tokensUsed: data.api2?.metrics?.llm_usage?.total_tokens || 0,
+        // latency: 0,
+        latency: data.api2?.metrics?.latency_ms || 0,
+        // cost: 0,
+        cost: data.api2?.metrics?.llm_usage?.estimated_cost_usd || 0,
+        // reasons: [JSON.stringify(data.api2)],
+        // reasons: data.api2?.validation?.reasoning || [],
+        reasons: reasonsArray,
         preCheckResults: {},
         rawResponse: JSON.stringify(data, null, 2),
       };
@@ -308,8 +347,8 @@ function PlaygroundTab({ projectId, projectType }: { projectId: number, projectT
   }
 
   //existing flow
-  if (!assetContent) {
-    toast({ title: "Asset content is required", variant: "destructive" });
+  if (!selectedFile) {
+    toast({ title: "Asset file is required", variant: "destructive" });
     return;
   }
 
