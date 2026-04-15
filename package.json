@@ -5,6 +5,7 @@
   "scripts": {
     "preinstall": "echo Using pnpm",
     "build": "pnpm --filter ./artifacts/api-server --filter ./artifacts/ai-asset-validator run build",
+    "start": "pnpm --filter @workspace/api-server run start",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
