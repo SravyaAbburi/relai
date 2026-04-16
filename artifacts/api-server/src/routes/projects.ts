@@ -6,7 +6,8 @@ import { requireAuth } from "../middlewares/auth";
 
 const router = Router();
 
-router.get("/projects", requireAuth, async (req, res): Promise<void> => {
+// router.get("/projects", requireAuth, async (req, res): Promise<void> => {
+router.get("/", requireAuth, async (req, res): Promise<void> => {
   const userId = req.auth!.userId;
   const role = req.auth!.role;
 
@@ -17,7 +18,8 @@ router.get("/projects", requireAuth, async (req, res): Promise<void> => {
   res.json(projects);
 });
 
-router.post("/projects", requireAuth, async (req, res): Promise<void> => {
+// router.post("/projects", requireAuth, async (req, res): Promise<void> => {
+router.post("/", requireAuth, async (req, res): Promise<void> => {
   const parsed = CreateProjectBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
