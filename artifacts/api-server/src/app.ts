@@ -6,7 +6,9 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
-
+app.get("/", (req, res) => {
+  res.send("API is running");
+});
 app.use(
   pinoHttp({
     logger,
@@ -32,6 +34,7 @@ app.use("/api/validate-image", validateImageRoute);
 app.use("/api/validate-audio", validateImageRoute);
 app.use("/api/validate-text", validateImageRoute);
 app.use("/api/validate-video", validateImageRoute);
+app.use("/api/validate-document", validateImageRoute);
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 app.use("/api", router);
