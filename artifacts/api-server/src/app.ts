@@ -4,11 +4,12 @@ import validateImageRoute from "./routes/validateImage";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import path from "path";
 
 const app: Express = express();
-app.get("/", (req, res) => {
-  res.send("API is running");
-});
+// app.get("/", (req, res) => {
+//   res.send("API is running");
+// });
 app.use(
   pinoHttp({
     logger,
@@ -38,5 +39,16 @@ app.use("/api/validate-document", validateImageRoute);
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 app.use("/api", router);
+
+
+// Serve frontend build
+app.use(express.static(path.join(__dirname, "../../ai-asset-validator/dist")));
+
+// Handle frontend routes (React/Vue routing)
+app.get("*", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../../ai-asset-validator/dist/index.html")
+  );
+});
 
 export default app;
